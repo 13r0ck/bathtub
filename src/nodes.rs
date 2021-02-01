@@ -3,40 +3,24 @@ use serde::Deserialize;
 use std::fs;
 use std::collections::HashMap;
 
-// Baths are Deserialized from config file, nodes are a generated 3d graph on nodes from the 2d
-// baths structs
-#[derive(Deserialize, Debug)]
-struct Bath {
-    name: String,
-    x: f32,
-    y: f32,
-    is_rinse: bool,
-    neighbors: Vec<String>,
-}
-
-#[derive(Deserialize, Debug)]
-struct Baths {
-    bath: Vec<Bath>,
-}
-
 #[derive(Clone, Debug)]
 pub struct Actions {
     gcode: String,
     seconds: f32,
 }
 
-#[derive(Clone, Debug)]
+// Baths are Deserialized from config file, nodes are a generated 3d graph on nodes from the 2d
+#[derive(Clone, Debug, Deserialize)]
 pub struct Node {
     pub name: String,
     pub x: f32,
     pub y:f32,
     pub z: f32,
     pub is_rinse: bool,
-    pub actions: Option<Vec<Actions>>,
     pub neighbors: Vec<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Nodes {
     pub node: Vec<Node>,
 }
@@ -52,41 +36,39 @@ impl Nodes {
             node: vec![]
         }
     }
-    fn to_nodes(baths: Baths) -> Nodes {
-        let mut nodes: Vec<Node> = vec![];
+    fn to_nodes(nodes: Nodes) -> Nodes {
+        let mut new_nodes: Vec<Node> = vec![];
         let mut new_neighbors: Vec<String>;
         //let bath_iter = baths.bath.into_iter();
-        for bath in baths.bath {
+        for node in nodes.node {
             // create node for head in bath
             
-            nodes.push(
+            new_nodes.push(
                 Node {
-                    name: format!("{}_inBath", bath.name),
-                    x: bath.x,
-                    y: bath.y,
-                    z: -10.0,
-                    is_rinse: bath.is_rinse,
-                    actions: None,
-                    neighbors: vec![bath.name.clone()]
+                    name: format!("{}_inBath", node.name),
+                    x: node.x,
+                    y: node.y,
+                    z: node.z,
+                    is_rinse: node.is_rinse,
+                    neighbors: vec![node.name.clone()]
                 }
             );
 
             // create node for head above bath
-            new_neighbors = bath.neighbors;
-            new_neighbors.push(format!("{}_inBath", &bath.name));
-            nodes.push(
+            new_neighbors = node.neighbors;
+            new_neighbors.push(format!("{}_inBath", &node.name));
+            new_nodes.push(
                 Node {
-                    name: bath.name,
-                    x: bath.x,
-                    y: bath.y,
+                    name: node.name,
+                    x: node.x,
+                    y: node.y,
                     z: 0.0,
-                    is_rinse : bath.is_rinse,
-                    actions: None,
+                    is_rinse : node.is_rinse,
                     neighbors: new_neighbors,
                 }
             )
         }
-        Nodes {node: nodes}
+        Nodes {node: new_nodes}
     }
 
     
@@ -141,8 +123,8 @@ pub fn get_nodemap(nodes: Nodes) -> HashMap<String, usize> {
         })
 }
 
-fn get_baths_config() -> Baths {
+fn get_baths_config() -> Nodes {
     let baths_toml = &fs::read_to_string("config/baths.toml")
         .expect("Unable to open config/baths.toml");
-    toml::from_str::<Baths>(baths_toml).unwrap()
+    toml::from_str::<Nodes>(baths_toml).unwrap()
 }

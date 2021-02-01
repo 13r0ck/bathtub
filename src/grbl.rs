@@ -40,7 +40,7 @@ pub fn new() -> Grbl {
                 grbl_response = send(&mut port, command);
                 ui_tx.send(grbl_response).unwrap();
             }
-            thread::sleep(Duration::from_millis(10));
+            thread::sleep(Duration::from_millis(1));
         }
     });
     Grbl {
