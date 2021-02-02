@@ -7,7 +7,7 @@ use grbl::Grbl;
 use std::collections::HashMap;
 use regex::Regex;
 
-use iced::{button, Button, time, Scrollable, Subscription, Font, Checkbox, scrollable, Container, Command, HorizontalAlignment, Length ,Column, Row, Element, Application, Settings, Text};
+use iced::{button, Button, time, Scrollable, Subscription, Space, Font, Checkbox, scrollable, Container, Command, HorizontalAlignment, Length ,Column, Row, Element, Application, Settings, Text};
 
 pub fn main() -> iced::Result {
     Bathtub::run(Settings::default())
@@ -21,7 +21,7 @@ enum Bathtub {
 
 struct State {
     scroll: scrollable::State,
-    bath_btns: Vec<Vec<(Node, button::State)>>,
+    bath_btns: Vec<Vec<Option<(Node, button::State)>>>,
     title: String,
     nodes: Nodes,
     node_map: HashMap<String, usize>,
@@ -93,8 +93,14 @@ impl Application for Bathtub {
                                 .fold(Vec::new(), |mut vec, axis| {
                                     vec.push(
                                         axis.into_iter()
+                                            // this might not work
                                             .fold(Vec::new(), |mut axis_vec, node| {
-                                                axis_vec.push((node, button::State::new()));
+                                                println!("{:?}", node);
+                                                if let Some(n) = node {
+                                                    axis_vec.push(Some((n, button::State::new())));
+                                                } else {
+                                                    axis_vec.push(None);
+                                                }
                                                 axis_vec
                                             })
                                     );
@@ -199,20 +205,28 @@ impl Application for Bathtub {
                     .color([0.5, 0.5, 0.5])
                     .font(MONOSPACE_TYPEWRITTER)
                     .horizontal_alignment(HorizontalAlignment::Center); 
-               
+
+                //println!("{:?}", bath_btns);
                 let button_grid = bath_btns.into_iter()
                     .fold(Column::new(), |column, grid| {
                         column.push(grid.into_iter()
                             .fold(Row::new(), |row, node_tup| {
-                                row.push(
-                                    Button::new(&mut node_tup.1, Text::new(&node_tup.0.name).horizontal_alignment(HorizontalAlignment::Center))
-                                        .padding(20)
-                                        .width(Length::Fill)
-                                        .on_press(Message::ButtonPressed(node_tup.0.name.clone()))
-                                )
+                                if let Some(nt) = node_tup {
+                                    row.push(
+                                        Button::new(&mut nt.1, Text::new(&nt.0.name).horizontal_alignment(HorizontalAlignment::Center))
+                                            .padding(15)
+                                            .width(Length::Fill)
+                                            .on_press(Message::ButtonPressed(nt.0.name.clone()))
+                                    )
+                                } else {
+                                    row.push(Column::new()
+                                            .width(Length::Fill)
+                                    )
+                                }
                             }).padding(3)
                         )
                     });
+
                 let inbath_toggle = Checkbox::new(
                   in_bath.clone(),
                   "Enter Bath",

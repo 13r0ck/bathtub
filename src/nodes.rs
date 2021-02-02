@@ -27,7 +27,7 @@ pub struct Nodes {
 
 #[derive(Debug, Clone)]
 pub struct NodeGrid2d {
-    pub grid: Vec<Vec<Node>>,
+    pub grid: Vec<Vec<Option<Node>>>,
 }
 
 impl Nodes {
@@ -74,11 +74,11 @@ impl Nodes {
     
 }
 
-// A 2d vector grid split on the y axis where:
-// vec![x x x x x x]
-// vec![x x x x x x]
+// A 2d positioning relative grid split on the y axis where:
+// vec![Node Node None Node]
+// vec![None None Node Node]
 impl NodeGrid2d {
-    fn new(grid: Vec<Vec<Node>>) -> NodeGrid2d {
+    fn new(grid: Vec<Vec<Option<Node>>>) -> NodeGrid2d {
         NodeGrid2d {
             grid,
         }
@@ -106,8 +106,29 @@ impl NodeGrid2d {
         for i in 0..build_grid.len() {
             build_grid[i].sort_by(|a, b| (b.x).total_cmp(&a.x));
         }
-        let ng2d = NodeGrid2d::new(build_grid);
-        ng2d
+        // find index of longest axis
+        let longest_axis = build_grid.clone().into_iter()
+            .max_by(|x, y| x.len().cmp(&y.len())).unwrap();
+
+        // normalize row lengths with 'None' values
+        let mut relative_grid: Vec<Vec<Option<Node>>> = build_grid.clone().into_iter()
+            .fold(Vec::new(), |mut row, axis_vec| {
+                row.push(axis_vec.into_iter()
+                    .fold(Vec::new(), |mut axis, node| {
+                        axis.push(Some(node));
+                        axis
+                    })
+                );
+                row
+            });
+        for i in 0..build_grid.len() {
+            for j in 0..longest_axis.len() {
+                if j == relative_grid[i].len() || longest_axis[j].x - relative_grid[i][j].clone().unwrap().x > 2.0 {
+                    relative_grid[i].insert(j, None)
+                }
+           }
+        }
+        NodeGrid2d::new(relative_grid)
     }
 }
 

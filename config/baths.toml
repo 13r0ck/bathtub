@@ -10,7 +10,6 @@
 #
 # Ordering baths sequentialy in the config is recommended, but not needed. The UI buttons and logic are built from the give x,y coords
 
-
 [[node]]
 name = "MCL_16"
 x = -0.1
